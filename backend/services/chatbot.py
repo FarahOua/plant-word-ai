@@ -25,13 +25,14 @@ def build_context(analysis: dict) -> str:
     return f"Plante : {analysis['plant']}, maladie : {analysis['disease']}."
 
 
-def generate_reply(message: str, analysis: dict, history: list[dict]) -> str:
+def generate_reply(message: str, analysis: dict, history: list[dict], location: dict | None = None) -> str:
     """Génère la réponse du chatbot.
 
     Args:
         message: la question de l'utilisateur.
         analysis: le résultat de /api/analyze (champ "result").
         history: les messages précédents, [{"role": "user" | "assistant", "content": "..."}].
+        location: la commune de l'utilisateur (facultatif), {"city", "department", "lat", "lon"}.
 
     Returns:
         Le texte de la réponse.
@@ -44,6 +45,9 @@ def generate_reply(message: str, analysis: dict, history: list[dict]) -> str:
     # L'historique n'est envoyé que s'il y a des messages précédents
     if history:
         payload["history"] = history[-10:]
+    # La commune n'est envoyée que si l'utilisateur l'a choisie (utile pour l'outil météo)
+    if location:
+        payload["location"] = location
     """response = requests.post(
         N8N_WEBHOOK_URL,
             json=payload,

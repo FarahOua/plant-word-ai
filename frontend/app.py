@@ -4,6 +4,7 @@ import streamlit as st
 
 from config import ACCEPTED_TYPES
 from services.api_client import ApiError, analyze, chat
+from services.communes import format_commune, search_communes
 
 st.set_page_config(page_title="PlantWorld AI", page_icon="🌿", layout="centered")
 
@@ -58,6 +59,25 @@ else:
 st.divider()
 st.subheader("💬 Discuter de cette analyse")
 
+# Ville facultative : permet au chatbot de tenir compte de la météo locale
+location = None
+city_query = st.text_input(
+    "📍 Votre ville (facultatif, pour tenir compte de la météo)",
+    placeholder="Tapez les premières lettres : Lyon, Annecy, Saint-Malo…",
+    key="city_query",
+)
+if city_query.strip():
+    matches = search_communes(city_query)
+    if matches:
+        location = st.selectbox(
+            "Choisissez votre commune",
+            matches,
+            format_func=format_commune,
+            key="city_choice",
+        )
+    else:
+        st.caption("Aucune commune française ne correspond à cette recherche.")
+
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -69,7 +89,7 @@ if question := st.chat_input("Posez une question sur cette plante..."):
     with st.chat_message("assistant"):
         with st.spinner("Réflexion..."):
             try:
-                reply = chat(question, analysis["result"], st.session_state.messages)
+                reply = chat(question, analysis["result"], st.session_state.messages, location)
             except ApiError as error:
                 st.error(str(error))
             else:
