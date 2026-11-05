@@ -22,6 +22,7 @@ def analyze_image(image: Image.Image) -> dict:
 
     return {
         "recognized": recognized,
+        "label": best.label if recognized else None,  # label brut du modèle, ex. "Strawberry___Leaf_scorch"
         "plant": plant if recognized else None,
         "disease": disease if recognized else None,
         "is_healthy": (disease is None) if recognized else None,

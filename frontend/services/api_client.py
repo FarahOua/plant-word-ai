@@ -42,12 +42,15 @@ def analyze(filename: str, content: bytes, mime_type: str) -> dict:
     return _post(ANALYZE_ENDPOINT, files={"image": (filename, content, mime_type)})
 
 
-def chat(message: str, analysis: dict, history: list[dict], location: dict | None = None) -> str:
+def chat(
+    session_id: str, message: str, analysis: dict, history: list[dict], location: dict | None = None
+) -> str:
     """Envoie une question au chatbot avec le résultat de l'analyse et renvoie sa réponse.
 
+    `session_id` : identifiant de la conversation, utilisé par n8n pour retrouver l'historique.
     `location` (facultatif) : commune choisie, {"city", "department", "lat", "lon"}.
     """
-    body = {"message": message, "analysis": analysis, "history": history}
+    body = {"session_id": session_id, "message": message, "analysis": analysis, "history": history}
     if location:
         body["location"] = {k: location[k] for k in ("city", "department", "lat", "lon")}
     data = _post(CHAT_ENDPOINT, json=body)

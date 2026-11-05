@@ -1,5 +1,7 @@
 """Interface Streamlit PlantWorld AI."""
 
+import uuid
+
 import streamlit as st
 
 from config import ACCEPTED_TYPES
@@ -25,6 +27,7 @@ if st.session_state.get("file_id") != uploaded_file.file_id:
     st.session_state.file_id = uploaded_file.file_id
     st.session_state.analysis = None
     st.session_state.messages = []
+    st.session_state.session_id = str(uuid.uuid4())  # identifiant de la conversation (mémoire n8n)
 
 st.image(uploaded_file, caption=uploaded_file.name, width="stretch")
 
@@ -34,6 +37,7 @@ if st.button("Analyser", type="primary", width="stretch"):
         try:
             st.session_state.analysis = analyze(uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)
             st.session_state.messages = []
+            st.session_state.session_id = str(uuid.uuid4())  # nouvelle analyse = nouvelle conversation
         except ApiError as error:
             st.error(str(error))
 
@@ -89,7 +93,9 @@ if question := st.chat_input("Posez une question sur cette plante..."):
     with st.chat_message("assistant"):
         with st.spinner("Réflexion..."):
             try:
-                reply = chat(question, analysis["result"], st.session_state.messages, location)
+                reply = chat(
+                    st.session_state.session_id, question, analysis["result"], st.session_state.messages, location
+                )
             except ApiError as error:
                 st.error(str(error))
             else:

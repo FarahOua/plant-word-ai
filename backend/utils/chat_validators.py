@@ -1,17 +1,23 @@
 """Validation des requêtes reçues par le chatbot."""
 
+import re
+
 ROLES = {"user", "assistant"}
+SESSION_ID_PATTERN = re.compile(r"^[A-Za-z0-9-]{1,64}$")  # ex. un UUID
 
 
 class ChatValidationError(ValueError):
     """Levée quand la requête du chatbot est incomplète ou mal formée."""
 
 
-def validate_chat_request(data, max_message_length: int, max_history: int) -> tuple[str, dict, list[dict], dict | None]:
-    """Vérifie le corps JSON de /api/chat et renvoie (message, analysis, history, location).
+def validate_chat_request(
+    data, max_message_length: int, max_history: int
+) -> tuple[str, str, dict, list[dict], dict | None]:
+    """Vérifie le corps JSON de /api/chat et renvoie (session_id, message, analysis, history, location).
 
     Format attendu :
     {
+        "session_id": "a3f9c2e1-7b4d-4e8a-9c1f-2d5e6f7a8b9c",
         "message": "Comment traiter le mildiou ?",
         "analysis": { ... champ "result" renvoyé par /api/analyze ... },
         "history": [{"role": "user" | "assistant", "content": "..."}],   (facultatif)
@@ -20,6 +26,10 @@ def validate_chat_request(data, max_message_length: int, max_history: int) -> tu
     """
     if not isinstance(data, dict):
         raise ChatValidationError("Corps JSON attendu.")
+
+    session_id = data.get("session_id")
+    if not isinstance(session_id, str) or not SESSION_ID_PATTERN.match(session_id):
+        raise ChatValidationError("Le champ 'session_id' est obligatoire (lettres, chiffres et tirets, 64 max).")
 
     message = data.get("message")
     if not isinstance(message, str) or not message.strip():
@@ -47,7 +57,7 @@ def validate_chat_request(data, max_message_length: int, max_history: int) -> tu
     location = _validate_location(data.get("location"))
 
     history = [{"role": m["role"], "content": m["content"]} for m in history]
-    return message.strip(), analysis, history, location
+    return session_id, message.strip(), analysis, history, location
 
 
 def _is_number(value) -> bool:

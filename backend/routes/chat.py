@@ -13,7 +13,7 @@ chat_bp = Blueprint("chat", __name__)
 def chat():
     """Reçoit une question, le résultat de l'analyse et l'historique, puis renvoie la réponse."""
     try:
-        message, analysis, history, location = validate_chat_request(
+        session_id, message, analysis, history, location = validate_chat_request(
             request.get_json(silent=True),
             max_message_length=current_app.config["CHAT_MAX_MESSAGE_LENGTH"],
             max_history=current_app.config["CHAT_MAX_HISTORY"],
@@ -22,7 +22,7 @@ def chat():
         return jsonify({"success": False, "error": str(error)}), 400
 
     try:
-        reply = generate_reply(message, analysis, history, location)
+        reply = generate_reply(session_id, message, analysis, history, location)
     except ChatbotUnavailableError as error:
         current_app.logger.error(error)
         return jsonify({"success": False, "error": "Le chatbot est indisponible pour le moment."}), 503

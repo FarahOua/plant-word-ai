@@ -25,10 +25,13 @@ def build_context(analysis: dict) -> str:
     return f"Plante : {analysis['plant']}, maladie : {analysis['disease']}."
 
 
-def generate_reply(message: str, analysis: dict, history: list[dict], location: dict | None = None) -> str:
+def generate_reply(
+    session_id: str, message: str, analysis: dict, history: list[dict], location: dict | None = None
+) -> str:
     """Génère la réponse du chatbot.
 
     Args:
+        session_id: identifiant de la conversation, utilisé par la mémoire de n8n.
         message: la question de l'utilisateur.
         analysis: le résultat de /api/analyze (champ "result").
         history: les messages précédents, [{"role": "user" | "assistant", "content": "..."}].
@@ -38,9 +41,10 @@ def generate_reply(message: str, analysis: dict, history: list[dict], location: 
         Le texte de la réponse.
     """
     payload = {
+            "session_id": session_id,
             "message": message,
             "context": build_context(analysis),
-            "analysis": {k: analysis.get(k) for k in ("recognized", "plant", "disease", "is_healthy", "confidence")},
+            "analysis": {k: analysis.get(k) for k in ("recognized", "label", "plant", "disease", "is_healthy", "confidence")},
             }
     # L'historique n'est envoyé que s'il y a des messages précédents
     if history:
