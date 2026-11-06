@@ -17,15 +17,8 @@ def build_context(analysis: dict) -> str:
     return f"Plante : {analysis['plant']}, maladie : {analysis['disease']}."
 
 
-def generate_reply(
-    session_id: str,
-    message: str,
-    analysis: dict,
-    history: list[dict],
-    location: dict | None = None,
-) -> str:
-    """Envoie la question à n8n et récupère la réponse de l'agent IA."""
-
+def build_payload(session_id: str, message: str, analysis: dict) -> dict:
+    """Construit le body envoyé au webhook n8n."""
     payload = {
         "sessionId": session_id,
         "message": message,
@@ -43,9 +36,11 @@ def generate_reply(
         },
     }
 
-    if location:
-        payload["location"] = location
+    return payload
 
+
+def send_to_n8n(payload: dict) -> str:
+    """Envoie le body au webhook n8n et renvoie la réponse de l'agent IA."""
     webhook_url = current_app.config["N8N_WEBHOOK_URL"]
     timeout = current_app.config["N8N_TIMEOUT"]
     api_key = current_app.config["N8N_API_KEY"]
@@ -78,3 +73,13 @@ def generate_reply(
         raise ChatbotUnavailableError("Réponse vide ou invalide de n8n.")
 
     return answer
+
+
+def generate_reply(
+    session_id: str,
+    message: str,
+    analysis: dict,
+    history: list[dict],
+) -> str:
+    """Envoie la question à n8n et récupère la réponse de l'agent IA."""
+    return send_to_n8n(build_payload(session_id, message, analysis))

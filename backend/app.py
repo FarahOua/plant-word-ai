@@ -6,6 +6,7 @@ from werkzeug.exceptions import RequestEntityTooLarge
 from config import Config
 from routes.analyze import analyze_bp
 from routes.chat import chat_bp
+from routes.evaluation import evaluation_bp
 from services.classifier import ModelUnavailableError, get_classifier
 
 
@@ -15,6 +16,7 @@ def create_app(config_class=Config) -> Flask:
 
     app.register_blueprint(analyze_bp, url_prefix="/api")
     app.register_blueprint(chat_bp, url_prefix="/api")
+    app.register_blueprint(evaluation_bp, url_prefix="/api")
 
     # Charge le modèle dès le démarrage pour que la première analyse soit rapide.
     # En cas d'échec, l'API démarre quand même et /api/analyze renverra une erreur 503.

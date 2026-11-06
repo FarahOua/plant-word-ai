@@ -38,3 +38,8 @@ class Config:
     N8N_WEBHOOK_URL = os.getenv("N8N_WEBHOOK_URL")
     N8N_API_KEY = os.getenv("N8N_API_KEY", "")
     N8N_TIMEOUT = int(os.getenv("N8N_TIMEOUT"))  # secondes
+
+    # Évaluation : LLM juge (API compatible OpenAI, ex. LiteLLM). Vide = juge désactivé.
+    JUDGE_BASE_URL = os.getenv("JUDGE_BASE_URL", "")
+    JUDGE_API_KEY = os.getenv("JUDGE_API_KEY", "")
+    JUDGE_MODEL = os.getenv("JUDGE_MODEL") or "openai/gpt-4.1-mini"

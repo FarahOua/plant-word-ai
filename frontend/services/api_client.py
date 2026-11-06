@@ -1,6 +1,15 @@
 import requests
 
-from config import ANALYZE_ENDPOINT, CHAT_ENDPOINT, HEALTH_ENDPOINT, REQUEST_TIMEOUT
+from config import (
+    ANALYZE_ENDPOINT,
+    CHAT_ENDPOINT,
+    EVAL_CASES_ENDPOINT,
+    EVAL_FEEDBACK_ENDPOINT,
+    EVAL_RUN_ENDPOINT,
+    EVAL_TIMEOUT,
+    HEALTH_ENDPOINT,
+    REQUEST_TIMEOUT,
+)
 
 
 class ApiError(Exception):
@@ -15,10 +24,15 @@ def check_backend() -> bool:
         return False
 
 
-def _post(url: str, **kwargs) -> dict:
+def _post(url: str, timeout: int = REQUEST_TIMEOUT, **kwargs) -> dict:
     """Envoie une requête POST et renvoie la réponse JSON, ou lève ApiError."""
+    return _request("POST", url, timeout=timeout, **kwargs)
+
+
+def _request(method: str, url: str, timeout: int = REQUEST_TIMEOUT, **kwargs) -> dict:
+    """Envoie une requête HTTP et renvoie la réponse JSON, ou lève ApiError."""
     try:
-        response = requests.post(url, timeout=REQUEST_TIMEOUT, **kwargs)
+        response = requests.request(method, url, timeout=timeout, **kwargs)
     except requests.ConnectionError:
         raise ApiError("Impossible de joindre le backend.")
     except requests.Timeout:
@@ -42,16 +56,26 @@ def analyze(filename: str, content: bytes, mime_type: str) -> dict:
     return _post(ANALYZE_ENDPOINT, files={"image": (filename, content, mime_type)})
 
 
-def chat(
-    session_id: str, message: str, analysis: dict, history: list[dict], location: dict | None = None
-) -> str:
+def chat(session_id: str, message: str, analysis: dict, history: list[dict]) -> str:
     """Envoie une question au chatbot avec le résultat de l'analyse et renvoie sa réponse.
 
     `session_id` : identifiant de la conversation, utilisé par n8n pour retrouver l'historique.
-    `location` (facultatif) : commune choisie, {"city", "department", "lat", "lon"}.
     """
     body = {"session_id": session_id, "message": message, "analysis": analysis, "history": history}
-    if location:
-        body["location"] = {k: location[k] for k in ("city", "department", "lat", "lon")}
     data = _post(CHAT_ENDPOINT, json=body)
     return data["reply"]
+
+
+def get_evaluation_cases() -> dict:
+    """Renvoie les diagnostics de test et les questions d'évaluation."""
+    return _request("GET", EVAL_CASES_ENDPOINT)
+
+
+def run_evaluation_case(case: dict) -> dict:
+    """Exécute un cas : réponse du workflow, contrôles par règles et avis du juge LLM."""
+    return _post(EVAL_RUN_ENDPOINT, timeout=EVAL_TIMEOUT, json={"case": case})
+
+
+def send_evaluation_feedback(feedback: dict) -> None:
+    """Enregistre l'avis humain (correct / incorrect) sur une réponse."""
+    _post(EVAL_FEEDBACK_ENDPOINT, json=feedback)
